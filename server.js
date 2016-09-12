@@ -70,7 +70,7 @@ function startKafkaConsumer() {
         {
             groupId: 'kafka-node-group',//consumer group id, default `kafka-node-group` 
             // Auto commit config 
-            autoCommit: false,
+            autoCommit: true,
             autoCommitIntervalMs: 5000,
             // The max wait time is the maximum amount of time in milliseconds to block waiting if insufficient data is available at the time the request is issued, default 100ms 
             fetchMaxWaitMs: 100,
@@ -85,10 +85,12 @@ function startKafkaConsumer() {
         }
     );
 
+    consumer.setOffset(['TEST', 'TWENTY_TWENTY', 'LIMITED_OVERS'], 0, 0);
+    
     consumer.on('message', message => {
         try {
             let gameInfo = protobuf.parse(message.value, "Game");
-            console.log("Decoded:", gameInfo);
+            console.log(gameInfo);
             gameService.saveGame(gameInfo, (err, game) => {
                 if (game) {
                     console.log('Saved game: ' + game);
@@ -97,6 +99,11 @@ function startKafkaConsumer() {
         } catch (e) {
             console.error("Error", e);
         }
+    });
+
+    consumer.on('error', err => {
+        console.error('Error in consumer: ', err.stack);
+        process.exit(0);
     });
 }
 
